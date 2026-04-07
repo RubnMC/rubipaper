@@ -2,13 +2,13 @@ package scanner
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-// ImageFile represents an image file found during scanning.
 type ImageFile struct {
 	Path    string
 	Name    string
@@ -20,8 +20,6 @@ var imageExts = map[string]struct{}{
 	".webp": {}, ".bmp": {}, ".tif": {}, ".tiff": {},
 }
 
-// ScanDirectory scans the given path for image files (flat, non-recursive).
-// Subdirectories and non-image files are silently ignored.
 func ScanDirectory(path string) ([]ImageFile, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -54,4 +52,23 @@ func ScanDirectory(path string) ([]ImageFile, error) {
 		})
 	}
 	return images, nil
+}
+
+// Order of results is not guaranteed.
+func ScanDirectoryRecursive(path string) ([]ImageFile, error) {
+	var images []ImageFile
+	err := filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			found, err := ScanDirectory(p)
+			if err != nil {
+				return err
+			}
+			images = append(images, found...)
+		}
+		return nil
+	})
+	return images, err
 }

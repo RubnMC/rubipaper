@@ -10,7 +10,7 @@ import (
 const defaultWallpaperDir = "/home/ruben/Pictures/Wallpapers"
 
 func main() {
-	images, err := scanner.ScanDirectory(defaultWallpaperDir)
+	images, err := scanner.ScanDirectoryRecursive(defaultWallpaperDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "rubipaper: failed to scan %q: %v\n", defaultWallpaperDir, err)
 		os.Exit(1)
