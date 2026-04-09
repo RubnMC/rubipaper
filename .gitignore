@@ -32,3 +32,4 @@ go.work.sum
 
 # AI
 CLAUDE.md
+.claude/
