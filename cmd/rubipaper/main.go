@@ -2,24 +2,32 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
+	"github.com/RubnMC/rubipaper/internal/backend"
 	"github.com/RubnMC/rubipaper/internal/scanner"
 )
 
 const defaultWallpaperDir = "/home/ruben/Pictures/Wallpapers"
 
 func main() {
-	images, err := scanner.ScanDirectoryRecursive(defaultWallpaperDir)
+	b := backend.NewSwaybgBackend()
+	_ = b
+	images, err := scanner.ScanDirectory(defaultWallpaperDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "rubipaper: failed to scan %q: %v\n", defaultWallpaperDir, err)
+		slog.Error("failed to scan directory", "dir", defaultWallpaperDir, "err", err)
 		os.Exit(1)
 	}
 	if len(images) == 0 {
-		fmt.Printf("rubipaper: no images found in %s\n", defaultWallpaperDir)
+		slog.Warn("no images found", "dir", defaultWallpaperDir)
 		return
 	}
 	for _, img := range images {
 		fmt.Println(img.Path)
 	}
+	// if err := b.SetWallpaper(images[0].Path, "fill"); err != nil {
+	// 	slog.Error("failed to set wallpaper", "err", err)
+	// 	os.Exit(1)
+	// }
 }
