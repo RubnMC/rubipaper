@@ -3,19 +3,18 @@ package backend
 import (
 	"fmt"
 	"github.com/RubnMC/rubipaper/internal/domain"
-	"os"
 	"os/exec"
 )
+
+var _ domain.Backend = (*SwaybgBackend)(nil)
 
 type SwaybgBackend struct {
 	currentWallpaper string
 	currentMode      string
-	socketPath       string
 }
 
 func NewSwaybgBackend() *SwaybgBackend {
 	return &SwaybgBackend{
-		socketPath: os.Getenv("SWAYSOCK"),
 	}
 }
 
@@ -72,5 +71,6 @@ func (s *SwaybgBackend) GetCurrentWallpaper() (string, error) {
 // --- internal helpers ---
 
 func (s *SwaybgBackend) isSwayEnv() bool {
-	return s.socketPath != ""
+	err := exec.Command("swaymsg", "-t", "get_version").Run()
+	return err == nil
 }
