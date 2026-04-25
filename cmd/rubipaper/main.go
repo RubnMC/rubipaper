@@ -1,19 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/RubnMC/rubipaper/internal/backend"
 	"github.com/RubnMC/rubipaper/internal/scanner"
+	"github.com/RubnMC/rubipaper/internal/ui"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const defaultWallpaperDir = "/home/ruben/Pictures/Wallpapers"
 
 func main() {
 	b := backend.NewSwaybgBackend()
-	_ = b
 	images, err := scanner.ScanDirectory(defaultWallpaperDir)
 	if err != nil {
 		slog.Error("failed to scan directory", "dir", defaultWallpaperDir, "err", err)
@@ -23,11 +23,10 @@ func main() {
 		slog.Warn("no images found", "dir", defaultWallpaperDir)
 		return
 	}
-	for _, img := range images {
-		fmt.Println(img.Path)
+
+	p := tea.NewProgram(ui.New(images, b))
+	if _, err := p.Run(); err != nil {
+		slog.Error("TUI error", "err", err)
+		os.Exit(1)
 	}
-	// if err := b.SetWallpaper(images[0].Path, "fill"); err != nil {
-	// 	slog.Error("failed to set wallpaper", "err", err)
-	// 	os.Exit(1)
-	// }
 }
