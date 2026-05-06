@@ -2,21 +2,21 @@ package config
 
 import "github.com/RubnMC/rubipaper/internal/domain"
 
-type baseConfig struct {
-	dir            string
-	mode           domain.WallpaperMode
+type BaseConfig struct {
+	defaultDir     string
+	defaultMode    domain.WallpaperMode
 	defaultBackend string
 	backends       []string
 }
 
-type colorsConfig struct {
+type ThemeConfig struct {
 }
 
-type keybindsConfig struct {
+type KeybindsConfig struct {
 }
 
 type Config struct {
-	base     baseConfig
-	colors   colorsConfig
-	keybinds keybindsConfig
+	base     BaseConfig
+	colors   ThemeConfig
+	keybinds KeybindsConfig
 }
