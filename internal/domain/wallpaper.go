@@ -15,6 +15,8 @@ const (
 	ModeFit     WallpaperMode = "fit"
 )
 
+var ValidModes = []WallpaperMode{ModeFill, ModeCenter, ModeTile, ModeStretch, ModeFit}
+
 type Wallpaper struct {
 	fileName   string
 	mode       WallpaperMode

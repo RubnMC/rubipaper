@@ -17,10 +17,11 @@ type Model struct {
 	cursor  int
 	status  string
 	backend domain.Backend
+	mode    domain.WallpaperMode
 }
 
-func New(items []scanner.ImageFile, b domain.Backend) Model {
-	return Model{items: items, backend: b}
+func New(items []scanner.ImageFile, b domain.Backend, mode domain.WallpaperMode) Model {
+	return Model{items: items, backend: b, mode: mode}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -43,7 +44,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if len(m.items) > 0 {
-				return m, setWallpaperCmd(m.backend, m.items[m.cursor].Path)
+				return m, setWallpaperCmd(m.backend, m.items[m.cursor].Path, m.mode)
 			}
 		}
 	case wallpaperResult:
@@ -73,8 +74,8 @@ func (m Model) View() string {
 	return res.String()
 }
 
-func setWallpaperCmd(b domain.Backend, path string) tea.Cmd {
+func setWallpaperCmd(b domain.Backend, path string, mode domain.WallpaperMode) tea.Cmd {
 	return func() tea.Msg {
-		return wallpaperResult{err: b.SetWallpaper(path, "fill")}
+		return wallpaperResult{err: b.SetWallpaper(path, string(mode))}
 	}
 }
