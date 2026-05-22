@@ -1,0 +1,5 @@
+[base]
+default_dir     = "~/Pictures/Wallpapers"
+default_mode    = "fill"
+default_backend = "swaybg"
+backends        = ["swaybg"]
