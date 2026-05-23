@@ -43,7 +43,7 @@ func TestScanDirectory_ReturnsImages(t *testing.T) {
 	}
 
 	for i := range got {
-		if !slices.Contains(expected, got[i].Name) {
+		if !slices.Contains(expected, got[i].FileName) {
 			t.Fatalf("differences found between the expected result set %v and the actual result %v", expected, got)
 		}
 	}

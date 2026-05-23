@@ -58,7 +58,12 @@ func main() {
 		return
 	}
 
-	b := backend.NewSwaybgBackend()
+	b, err := backend.NewBackend(cfg.Base.DefaultBackend)
+	if err != nil {
+		slog.Error("failed to initialize default backend", "backend", cfg.Base.DefaultBackend)
+		os.Exit(1)
+	}
+
 	p := tea.NewProgram(ui.New(images, b, cfg.Base.DefaultMode))
 	if _, err := p.Run(); err != nil {
 		slog.Error("TUI error", "err", err)

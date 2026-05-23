@@ -6,21 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-)
 
-type ImageFile struct {
-	Path    string
-	Name    string
-	ModTime time.Time
-}
+	"github.com/RubnMC/rubipaper/internal/domain"
+)
 
 var imageExts = map[string]struct{}{
 	".jpg": {}, ".jpeg": {}, ".png": {}, ".gif": {},
 	".webp": {}, ".bmp": {}, ".tif": {}, ".tiff": {},
 }
 
-func ScanDirectory(path string) ([]ImageFile, error) {
+func ScanDirectory(path string) ([]domain.Wallpaper, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("open directory: %w", err)
@@ -32,7 +27,7 @@ func ScanDirectory(path string) ([]ImageFile, error) {
 		return nil, fmt.Errorf("read directory: %w", err)
 	}
 
-	var images []ImageFile
+	var images []domain.Wallpaper
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -45,18 +40,17 @@ func ScanDirectory(path string) ([]ImageFile, error) {
 		if err != nil {
 			return nil, fmt.Errorf("resolve path for %q: %w", entry.Name(), err)
 		}
-		images = append(images, ImageFile{
-			Path:    abs,
-			Name:    entry.Name(),
-			ModTime: entry.ModTime(),
+		images = append(images, domain.Wallpaper{
+			Path:     abs,
+			FileName: entry.Name(),
 		})
 	}
 	return images, nil
 }
 
 // Order of results is not guaranteed.
-func ScanDirectoryRecursive(path string) ([]ImageFile, error) {
-	var images []ImageFile
+func ScanDirectoryRecursive(path string) ([]domain.Wallpaper, error) {
+	var images []domain.Wallpaper
 	err := filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

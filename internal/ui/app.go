@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/RubnMC/rubipaper/internal/domain"
-	"github.com/RubnMC/rubipaper/internal/scanner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -13,14 +12,14 @@ type wallpaperResult struct {
 }
 
 type Model struct {
-	items   []scanner.ImageFile
+	items   []domain.Wallpaper
 	cursor  int
 	status  string
 	backend domain.Backend
 	mode    domain.WallpaperMode
 }
 
-func New(items []scanner.ImageFile, b domain.Backend, mode domain.WallpaperMode) Model {
+func New(items []domain.Wallpaper, b domain.Backend, mode domain.WallpaperMode) Model {
 	return Model{items: items, backend: b, mode: mode}
 }
 
@@ -51,7 +50,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = "error: " + msg.err.Error()
 		} else {
-			m.status = "wallpaper set: " + m.items[m.cursor].Name
+			m.status = "wallpaper set: " + m.items[m.cursor].FileName
 		}
 	}
 	return m, nil
@@ -59,17 +58,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var res strings.Builder
+	res.WriteString("Backend: ")
+	res.WriteString(m.backend.Name())
+	res.WriteString(" | ")
+	res.WriteString("Mode: ")
+	res.WriteString(string(m.mode))
+	res.WriteString("\n")
+
 	for idx, item := range m.items {
 		if idx == m.cursor {
 			res.WriteString("-> ")
 		} else {
 			res.WriteString("   ")
 		}
-		res.WriteString(item.Name)
+		res.WriteString(item.FileName)
 		res.WriteString("\n")
 	}
 	if m.status != "" {
-		res.WriteString("\n" + m.status + "\n")
+		res.WriteString("\n")
+		res.WriteString(m.status)
+		res.WriteString("\n")
 	}
 	return res.String()
 }
