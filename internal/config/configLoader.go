@@ -9,10 +9,11 @@ import (
 
 // tomlBase mirrors BaseConfig with exported fields for TOML decoding.
 type tomlBase struct {
-	DefaultDir     string   `toml:"default_dir"`
-	DefaultMode    string   `toml:"default_mode"`
-	DefaultBackend string   `toml:"default_backend"`
-	Backends       []string `toml:"backends"`
+	DefaultDir         string   `toml:"default_dir"`
+	DefaultMode        string   `toml:"default_mode"`
+	DefaultBackend     string   `toml:"default_backend"`
+	Backends           []string `toml:"backends"`
+	RecursiveDirSearch *bool    `toml:"recursive_dir_search"`
 }
 
 type tomlConfig struct {
@@ -32,6 +33,9 @@ func merge(base, override tomlConfig) tomlConfig {
 	}
 	if len(override.Base.Backends) > 0 {
 		base.Base.Backends = override.Base.Backends
+	}
+	if override.Base.RecursiveDirSearch != nil {
+		base.Base.RecursiveDirSearch = override.Base.RecursiveDirSearch
 	}
 	return base
 }
