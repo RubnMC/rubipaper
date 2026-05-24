@@ -64,7 +64,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(ui.New(images, b, cfg.Base.DefaultMode))
+	p := tea.NewProgram(ui.New(images, wallpaperDir, b, cfg.Base.DefaultMode))
 	if _, err := p.Run(); err != nil {
 		slog.Error("TUI error", "err", err)
 		os.Exit(1)
