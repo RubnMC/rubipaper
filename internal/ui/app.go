@@ -28,16 +28,23 @@ func New(items []domain.Wallpaper, wallpaperDir string, b domain.Backend, mode d
 func (m Model) Init() tea.Cmd { return nil }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Copy components slice to avoid mutating the backing array of any previous Model.
+	components := make([]Focusable, len(m.components))
+	copy(components, m.components)
+	m.components = components
+
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case m.keybinds.FocusNext:
+		}
+		if m.keybinds.FocusNext != "" && key.String() == m.keybinds.FocusNext {
 			m.components[m.focused] = m.components[m.focused].Blur()
 			m.focused = (m.focused + 1) % len(m.components)
 			m.components[m.focused] = m.components[m.focused].Focus()
 			return m, nil
-		case m.keybinds.FocusPrev:
+		}
+		if m.keybinds.FocusPrev != "" && key.String() == m.keybinds.FocusPrev {
 			m.components[m.focused] = m.components[m.focused].Blur()
 			m.focused = (m.focused - 1 + len(m.components)) % len(m.components)
 			m.components[m.focused] = m.components[m.focused].Focus()

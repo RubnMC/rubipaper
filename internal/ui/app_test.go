@@ -76,3 +76,37 @@ func TestBroadcastDeliveredToAllComponents(t *testing.T) {
 		t.Error("OptionsBar should receive RecursiveToggledMsg via broadcast")
 	}
 }
+
+func TestViewReturnsNonEmpty(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+	view := m.View()
+	if view == "" {
+		t.Error("View() should return a non-empty string")
+	}
+}
+
+func TestViewWithFocusBorderColor(t *testing.T) {
+	kb := config.KeybindsConfig{FocusNext: "shift+down", FocusPrev: "shift+up"}
+	ap := config.AppearanceConfig{FocusBorderColor: "#ff0000"}
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+	view := m.View()
+	if view == "" {
+		t.Error("View() should return a non-empty string with FocusBorderColor set")
+	}
+}
+
+func TestQuitKeyReturnsQuitCmd(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	for _, key := range []string{"q", "ctrl+c"} {
+		_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+		if key == "ctrl+c" {
+			_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+		}
+		if cmd == nil {
+			t.Errorf("Update(%q) should return a non-nil cmd", key)
+		}
+	}
+}
