@@ -5,6 +5,8 @@ import (
 
 	"github.com/RubnMC/rubipaper/internal/config"
 	"github.com/RubnMC/rubipaper/internal/domain"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -87,12 +89,23 @@ func TestViewReturnsNonEmpty(t *testing.T) {
 }
 
 func TestViewWithFocusBorderColor(t *testing.T) {
+	// Force lipgloss to output colors for testing
+	oldProfile := lipgloss.ColorProfile()
+	defer lipgloss.SetColorProfile(oldProfile)
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
 	kb := config.KeybindsConfig{FocusNext: "shift+down", FocusPrev: "shift+up"}
-	ap := config.AppearanceConfig{FocusBorderColor: "#ff0000"}
-	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
-	view := m.View()
-	if view == "" {
-		t.Error("View() should return a non-empty string with FocusBorderColor set")
+
+	apColor := config.AppearanceConfig{FocusBorderColor: "#ff0000"}
+	mColor := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, apColor)
+	viewWithColor := mColor.View()
+
+	apNone := config.AppearanceConfig{}
+	mNone := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, apNone)
+	viewWithout := mNone.View()
+
+	if viewWithColor == viewWithout {
+		t.Error("View() output should differ when FocusBorderColor is set vs not set")
 	}
 }
 
