@@ -97,3 +97,35 @@ func TestFileExplorerViewShowsItems(t *testing.T) {
 		t.Error("View() should render all file names")
 	}
 }
+
+func TestFileExplorerCursorWithEmptyList(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers(), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	updated, _ := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if updated.(FileExplorerModel).cursor != 0 {
+		t.Error("cursor should stay at 0 with empty list")
+	}
+
+	updated, _ = f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
+	if updated.(FileExplorerModel).cursor != 0 {
+		t.Error("cursor should stay at 0 with empty list")
+	}
+}
+
+func TestFileExplorerRecursiveToggleTwiceRestores(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	updated, _ := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	f = updated.(FileExplorerModel)
+	if !f.recursive {
+		t.Error("recursive should be true after first toggle")
+	}
+
+	updated, _ = f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	f = updated.(FileExplorerModel)
+	if f.recursive {
+		t.Error("recursive should be false after second toggle")
+	}
+}
