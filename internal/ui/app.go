@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"os"
 	"strconv"
 	"strings"
 
@@ -112,14 +111,6 @@ func (m Model) View() string {
 		res.WriteString("\n")
 	}
 	return res.String()
-}
-
-func shortenHome(path string) string {
-	home, err := os.UserHomeDir()
-	if err != nil || !strings.HasPrefix(path, home) {
-		return path
-	}
-	return "~" + path[len(home):]
 }
 
 func scanWallpapersCmd(path string, recursive bool) tea.Cmd {
