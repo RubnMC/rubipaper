@@ -16,8 +16,19 @@ type tomlBase struct {
 	RecursiveDirSearch *bool    `toml:"recursive_dir_search"`
 }
 
+type tomlKeybinds struct {
+	FocusNext string `toml:"focus_next"`
+	FocusPrev string `toml:"focus_prev"`
+}
+
+type tomlAppearance struct {
+	FocusBorderColor string `toml:"focus_border_color"`
+}
+
 type tomlConfig struct {
-	Base tomlBase `toml:"base"`
+	Base       tomlBase       `toml:"base"`
+	Keybinds   tomlKeybinds   `toml:"keybinds"`
+	Appearance tomlAppearance `toml:"appearance"`
 }
 
 // merge applies non-zero fields from override onto base.
@@ -36,6 +47,15 @@ func merge(base, override tomlConfig) tomlConfig {
 	}
 	if override.Base.RecursiveDirSearch != nil {
 		base.Base.RecursiveDirSearch = override.Base.RecursiveDirSearch
+	}
+	if override.Keybinds.FocusNext != "" {
+		base.Keybinds.FocusNext = override.Keybinds.FocusNext
+	}
+	if override.Keybinds.FocusPrev != "" {
+		base.Keybinds.FocusPrev = override.Keybinds.FocusPrev
+	}
+	if override.Appearance.FocusBorderColor != "" {
+		base.Appearance.FocusBorderColor = override.Appearance.FocusBorderColor
 	}
 	return base
 }

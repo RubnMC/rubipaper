@@ -16,9 +16,12 @@ type BaseConfig struct {
 }
 
 type AppearanceConfig struct {
+	FocusBorderColor string
 }
 
 type KeybindsConfig struct {
+	FocusNext string
+	FocusPrev string
 }
 
 type Config struct {
@@ -75,6 +78,9 @@ func newConfig(raw tomlConfig) (*Config, error) {
 	p.Base.DefaultMode = domain.WallpaperMode(raw.Base.DefaultMode)
 	p.Base.DefaultBackend = raw.Base.DefaultBackend
 	p.Base.Backends = raw.Base.Backends
+	p.Keybinds.FocusNext = raw.Keybinds.FocusNext
+	p.Keybinds.FocusPrev = raw.Keybinds.FocusPrev
+	p.Colors.FocusBorderColor = raw.Appearance.FocusBorderColor
 
 	return p, nil
 }

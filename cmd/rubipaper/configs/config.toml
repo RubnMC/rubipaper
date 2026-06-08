@@ -4,3 +4,10 @@ default_mode         = "fill"
 default_backend      = "swaybg"
 backends             = ["swaybg"]
 recursive_dir_search = false
+
+[keybinds]
+focus_next = "shift+down"
+focus_prev = "shift+up"
+
+[appearance]
+focus_border_color = ""
