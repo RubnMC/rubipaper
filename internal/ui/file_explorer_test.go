@@ -1,0 +1,99 @@
+package ui
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/RubnMC/rubipaper/internal/domain"
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func makeWallpapers(names ...string) []domain.Wallpaper {
+	ws := make([]domain.Wallpaper, len(names))
+	for i, n := range names {
+		ws[i] = domain.Wallpaper{Path: "/pics/" + n, FileName: n}
+	}
+	return ws
+}
+
+func TestFileExplorerStartsUnfocused(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	if f.IsFocused() {
+		t.Error("new FileExplorer should not be focused")
+	}
+}
+
+func TestFileExplorerFocusBlur(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	if !f.Focus().IsFocused() {
+		t.Error("Focus() should return focused component")
+	}
+	if f.Focus().Blur().IsFocused() {
+		t.Error("Blur() should return unfocused component")
+	}
+	if f.IsFocused() {
+		t.Error("Focus() must not mutate the original")
+	}
+}
+
+func TestFileExplorerIgnoresKeysWhenUnfocused(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg", "b.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	updated, _ := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if updated.(FileExplorerModel).cursor != 0 {
+		t.Error("unfocused FileExplorer must not move cursor on key press")
+	}
+}
+
+func TestFileExplorerNavigatesDownAndUp(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg", "b.jpg", "c.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	updated, _ := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	f = updated.(FileExplorerModel)
+	if f.cursor != 1 {
+		t.Errorf("cursor = %d, want 1 after j", f.cursor)
+	}
+
+	updated, _ = f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
+	f = updated.(FileExplorerModel)
+	if f.cursor != 0 {
+		t.Errorf("cursor = %d, want 0 after k", f.cursor)
+	}
+}
+
+func TestFileExplorerCursorDoesNotOverflow(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	updated, _ := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
+	if updated.(FileExplorerModel).cursor != 0 {
+		t.Error("cursor should not go below 0")
+	}
+
+	updated, _ = f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if updated.(FileExplorerModel).cursor != 0 {
+		t.Error("cursor should not go past last item with one item")
+	}
+}
+
+func TestFileExplorerRecursiveToggleUpdatesState(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	updated, cmd := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	fe := updated.(FileExplorerModel)
+	if !fe.recursive {
+		t.Error("recursive should be true after first toggle")
+	}
+	if cmd == nil {
+		t.Error("toggle should return a non-nil cmd for scan and broadcast")
+	}
+}
+
+func TestFileExplorerViewShowsItems(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("wall.jpg", "bg.png"), "/pics", stubBackend{}, domain.ModeFill)
+	view := f.View()
+	if !strings.Contains(view, "wall.jpg") || !strings.Contains(view, "bg.png") {
+		t.Error("View() should render all file names")
+	}
+}

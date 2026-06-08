@@ -5,18 +5,8 @@ import (
 	"strings"
 
 	"github.com/RubnMC/rubipaper/internal/domain"
-	"github.com/RubnMC/rubipaper/internal/scanner"
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-type wallpaperResult struct {
-	err error
-}
-
-type scanResult struct {
-	items []domain.Wallpaper
-	err   error
-}
 
 type Model struct {
 	items     []domain.Wallpaper
@@ -111,22 +101,4 @@ func (m Model) View() string {
 		res.WriteString("\n")
 	}
 	return res.String()
-}
-
-func scanWallpapersCmd(path string, recursive bool) tea.Cmd {
-	return func() tea.Msg {
-		var res scanResult
-		if recursive {
-			res.items, res.err = scanner.ScanDirectoryRecursive(path)
-		} else {
-			res.items, res.err = scanner.ScanDirectory(path)
-		}
-		return res
-	}
-}
-
-func setWallpaperCmd(b domain.Backend, path string, mode domain.WallpaperMode) tea.Cmd {
-	return func() tea.Msg {
-		return wallpaperResult{err: b.SetWallpaper(path, string(mode))}
-	}
 }
