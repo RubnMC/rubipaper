@@ -24,8 +24,20 @@ func NewOptionsBar(itemsPath string, b domain.Backend, mode domain.WallpaperMode
 func (o OptionsBarModel) Init() tea.Cmd { return nil }
 
 func (o OptionsBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m, ok := msg.(RecursiveToggledMsg); ok {
-		o.recursive = m.Recursive
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if !o.focused {
+			return o, nil
+		}
+		switch msg.String() {
+		case "r":
+			o.recursive = !o.recursive
+			recursive := o.recursive
+			return o, tea.Batch(
+				scanWallpapersCmd(o.itemsPath, o.recursive),
+				func() tea.Msg { return RecursiveToggledMsg{Recursive: recursive} },
+			)
+		}
 	}
 	return o, nil
 }

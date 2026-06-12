@@ -53,13 +53,6 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(f.items) > 0 {
 				return f, setWallpaperCmd(f.backend, f.items[f.cursor].Path, f.mode)
 			}
-		case "r":
-			f.recursive = !f.recursive
-			recursive := f.recursive
-			return f, tea.Batch(
-				scanWallpapersCmd(f.itemsPath, f.recursive),
-				func() tea.Msg { return RecursiveToggledMsg{Recursive: recursive} },
-			)
 		}
 	case wallpaperResult:
 		if msg.err != nil {
