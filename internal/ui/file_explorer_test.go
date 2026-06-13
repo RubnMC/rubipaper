@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/RubnMC/rubipaper/internal/domain"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -127,5 +128,25 @@ func TestFileExplorerRecursiveToggleTwiceRestores(t *testing.T) {
 	f = updated.(FileExplorerModel)
 	if f.recursive {
 		t.Error("recursive should be false after second toggle")
+	}
+}
+
+func TestFileExplorerShortHelp(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	bindings := f.ShortHelp()
+	if len(bindings) != 4 {
+		t.Fatalf("ShortHelp() = %d bindings, want 4", len(bindings))
+	}
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}, bindings[0]) {
+		t.Error("bindings[0] should match 'k' (up)")
+	}
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}, bindings[1]) {
+		t.Error("bindings[1] should match 'j' (down)")
+	}
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyEnter}, bindings[2]) {
+		t.Error("bindings[2] should match enter")
+	}
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")}, bindings[3]) {
+		t.Error("bindings[3] should match 'r' (toggle recursive search)")
 	}
 }
