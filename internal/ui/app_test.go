@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/RubnMC/rubipaper/internal/config"
@@ -121,5 +122,59 @@ func TestQuitKeyReturnsQuitCmd(t *testing.T) {
 		if cmd == nil {
 			t.Errorf("Update(%q) should return a non-nil cmd", key)
 		}
+	}
+}
+
+func TestViewFooterShowsFocusedComponentKeys(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	view := m.View()
+	for _, want := range []string{"set wallpaper", "toggle recursive search"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("footer missing FileExplorer key hint %q when it is focused", want)
+		}
+	}
+}
+
+func TestViewFooterSwitchesWithFocus(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyShiftUp})
+	m = updated.(Model)
+
+	view := m.View()
+	if strings.Contains(view, "set wallpaper") || strings.Contains(view, "toggle recursive search") {
+		t.Error("footer should not show FileExplorer's keybinds when it is not focused")
+	}
+	for _, want := range []string{"quit", "next panel", "prev panel"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("footer missing global key hint %q when OptionsBar is focused", want)
+		}
+	}
+}
+
+func TestViewFooterAlwaysShowsGlobalKeys(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	view := m.View()
+	for _, want := range []string{"quit", "next panel", "prev panel"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("footer missing global key hint %q", want)
+		}
+	}
+}
+
+func TestViewFooterOmitsEmptyFocusKeys(t *testing.T) {
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, config.KeybindsConfig{}, config.AppearanceConfig{})
+
+	view := m.View()
+	if strings.Contains(view, "next panel") || strings.Contains(view, "prev panel") {
+		t.Error("footer should omit focus-switch hints when keybinds are unconfigured")
+	}
+	if !strings.Contains(view, "quit") {
+		t.Error("footer should always show quit")
 	}
 }
