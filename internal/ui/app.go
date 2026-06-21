@@ -3,6 +3,8 @@ package ui
 import (
 	"github.com/RubnMC/rubipaper/internal/config"
 	"github.com/RubnMC/rubipaper/internal/domain"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -12,6 +14,8 @@ type Model struct {
 	focused    int
 	keybinds   config.KeybindsConfig
 	appearance config.AppearanceConfig
+	help       help.Model
+	globalKeys []key.Binding
 }
 
 func New(items []domain.Wallpaper, wallpaperDir string, b domain.Backend, mode domain.WallpaperMode, keybinds config.KeybindsConfig, appearance config.AppearanceConfig) Model {
@@ -22,6 +26,8 @@ func New(items []domain.Wallpaper, wallpaperDir string, b domain.Backend, mode d
 		focused:    1,
 		keybinds:   keybinds,
 		appearance: appearance,
+		help:       help.New(),
+		globalKeys: globalKeyMap(keybinds),
 	}
 }
 
@@ -33,18 +39,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	copy(components, m.components)
 	m.components = components
 
-	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "ctrl+c", "q":
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if key.Matches(keyMsg, keyQuit) {
 			return m, tea.Quit
 		}
-		if m.keybinds.FocusNext != "" && key.String() == m.keybinds.FocusNext {
+		if m.keybinds.FocusNext != "" && key.Matches(keyMsg, key.NewBinding(key.WithKeys(m.keybinds.FocusNext))) {
 			m.components[m.focused] = m.components[m.focused].Blur()
 			m.focused = (m.focused + 1) % len(m.components)
 			m.components[m.focused] = m.components[m.focused].Focus()
 			return m, nil
 		}
-		if m.keybinds.FocusPrev != "" && key.String() == m.keybinds.FocusPrev {
+		if m.keybinds.FocusPrev != "" && key.Matches(keyMsg, key.NewBinding(key.WithKeys(m.keybinds.FocusPrev))) {
 			m.components[m.focused] = m.components[m.focused].Blur()
 			m.focused = (m.focused - 1 + len(m.components)) % len(m.components)
 			m.components[m.focused] = m.components[m.focused].Focus()
@@ -76,5 +81,12 @@ func (m Model) View() string {
 		}
 		views[i] = style.Render(c.View())
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, views...)
+
+	keys := append([]key.Binding{}, m.globalKeys...)
+	if km, ok := m.components[m.focused].(ComponentKeyMap); ok {
+		keys = append(keys, km.ShortHelp()...)
+	}
+	footer := m.help.ShortHelpView(keys)
+
+	return lipgloss.JoinVertical(lipgloss.Left, append(views, footer)...)
 }

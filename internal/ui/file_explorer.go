@@ -5,7 +5,15 @@ import (
 
 	"github.com/RubnMC/rubipaper/internal/domain"
 	"github.com/RubnMC/rubipaper/internal/scanner"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+)
+
+var (
+	keyUp              = key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up"))
+	keyDown            = key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down"))
+	keyEnter           = key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "set wallpaper"))
+	keyToggleRecursive = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "toggle recursive search"))
 )
 
 type wallpaperResult struct {
@@ -40,20 +48,20 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !f.focused {
 			return f, nil
 		}
-		switch msg.String() {
-		case "up", "k":
+		switch {
+		case key.Matches(msg, keyUp):
 			if f.cursor > 0 {
 				f.cursor--
 			}
-		case "down", "j":
+		case key.Matches(msg, keyDown):
 			if f.cursor < len(f.items)-1 {
 				f.cursor++
 			}
-		case "enter":
+		case key.Matches(msg, keyEnter):
 			if len(f.items) > 0 {
 				return f, setWallpaperCmd(f.backend, f.items[f.cursor].Path, f.mode)
 			}
-		case "r":
+		case key.Matches(msg, keyToggleRecursive):
 			f.recursive = !f.recursive
 			recursive := f.recursive
 			return f, tea.Batch(
@@ -109,6 +117,10 @@ func (f FileExplorerModel) Blur() Focusable {
 }
 
 func (f FileExplorerModel) IsFocused() bool { return f.focused }
+
+func (f FileExplorerModel) ShortHelp() []key.Binding {
+	return []key.Binding{keyUp, keyDown, keyEnter, keyToggleRecursive}
+}
 
 func scanWallpapersCmd(path string, recursive bool) tea.Cmd {
 	return func() tea.Msg {
