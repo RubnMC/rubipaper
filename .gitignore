@@ -36,3 +36,6 @@ go.work.sum
 CLAUDE.md
 .claude/
 docs/superpowers/plans/
+
+# Misc
+*.kitty-session
