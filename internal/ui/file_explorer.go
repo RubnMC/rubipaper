@@ -53,10 +53,12 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if f.cursor > 0 {
 				f.cursor--
 			}
+			return f, f.selectedCmd()
 		case key.Matches(msg, keyDown):
 			if f.cursor < len(f.items)-1 {
 				f.cursor++
 			}
+			return f, f.selectedCmd()
 		case key.Matches(msg, keyEnter):
 			if len(f.items) > 0 {
 				return f, setWallpaperCmd(f.backend, f.items[f.cursor].Path, f.mode)
@@ -82,6 +84,7 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.items = msg.items
 			f.cursor = 0
 			f.status = ""
+			return f, f.selectedCmd()
 		}
 	}
 	return f, nil
@@ -120,6 +123,14 @@ func (f FileExplorerModel) IsFocused() bool { return f.focused }
 
 func (f FileExplorerModel) ShortHelp() []key.Binding {
 	return []key.Binding{keyUp, keyDown, keyEnter, keyToggleRecursive}
+}
+
+func (f FileExplorerModel) selectedCmd() tea.Cmd {
+	if len(f.items) == 0 {
+		return func() tea.Msg { return WallpaperSelectedMsg{Wallpaper: nil} }
+	}
+	w := f.items[f.cursor]
+	return func() tea.Msg { return WallpaperSelectedMsg{Wallpaper: &w} }
 }
 
 func scanWallpapersCmd(path string, recursive bool) tea.Cmd {
