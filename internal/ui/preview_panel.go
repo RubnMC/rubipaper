@@ -16,13 +16,13 @@ import (
 	"golang.org/x/image/draw"
 )
 
+// cellPixelWidth is the assumed terminal cell width in pixels (typically 12px at default
+// font sizes). Used to compute the target image pixel width from the available column count.
+// cellPixelHeight is the assumed terminal cell height in pixels. Used to estimate how many
+// rows the rendered Kitty image occupies so that Bubbletea's text layout leaves the correct
+// vertical gap. 24px is the most common default but varies with font size and terminal config.
 const (
-	// cellPixelWidth is the assumed terminal cell width in pixels (typically 12px at default
-	// font sizes). Used to compute the target image pixel width from the available column count.
 	cellPixelWidth = 12
-	// cellPixelHeight is the assumed terminal cell height in pixels. Used to estimate how many
-	// rows the rendered Kitty image occupies so that Bubbletea's text layout leaves the correct
-	// vertical gap. 24px is the most common default but varies with font size and terminal config.
 	cellPixelHeight = 24
 	previewRatio    = 0.6
 )
@@ -59,10 +59,7 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 			p.loading = false
 			return p, nil
 		}
-		maxRows := p.height / 3
-		if maxRows < 1 {
-			maxRows = 1
-		}
+		maxRows := max(p.height / 3, 1)
 		p.reservedRows = maxRows
 		p.loading = true
 		innerCols := p.width - 2
@@ -77,10 +74,7 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 		p.width = int(float64(msg.Width) * previewRatio)
 		p.height = msg.Height
 		if p.selected != nil && p.kittySupport && p.renderedImg == "" && !p.loading {
-			maxRows := p.height / 3
-			if maxRows < 1 {
-				maxRows = 1
-			}
+			maxRows := max(p.height / 3, 1)
 			p.reservedRows = maxRows
 			p.loading = true
 			innerCols := p.width - 2
@@ -184,22 +178,22 @@ func renderImageCmd(path string, innerCols, maxRows int) tea.Cmd {
 		dst := image.NewRGBA(image.Rect(0, 0, targetW, targetH))
 		draw.BiLinear.Scale(dst, dst.Bounds(), src, bounds, draw.Over, nil)
 
-		rows := targetH / cellPixelHeight
-		if rows < 1 {
-			rows = 1
-		}
+		rows := max(targetH / cellPixelHeight, 1)
 
 		var buf strings.Builder
+
 		// Clear all previous Kitty image placements before writing the new one.
 		// Without this, old image pixels persist in the terminal's graphics layer
 		// even after Bubbletea overwrites the text content.
 		buf.WriteString("\x1b_Ga=d,d=A\x1b\\")
+
 		// Save cursor before the APC so we can restore it after. The Kitty APC
 		// advances the terminal cursor by imgRows rows, but Bubbletea measures
 		// frame height by counting \n characters and never sees that movement.
 		// Restoring the cursor then emitting `rows` real newlines keeps both
 		// Bubbletea's line count and the terminal cursor in sync.
 		buf.WriteString("\x1b[s")
+
 		if err := kittyimg.Fprint(&buf, dst); err != nil {
 			return imageRenderedMsg{err: err}
 		}
