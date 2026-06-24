@@ -6,6 +6,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"os"
 	"strings"
 
@@ -36,6 +37,7 @@ type PreviewPanelModel struct {
 	selected     *domain.Wallpaper
 	renderedImg  string
 	imgRows      int
+	reservedRows int // fixed row count for image area, locked in when selection starts loading
 	loading      bool
 	kittySupport bool
 	width        int
@@ -52,13 +54,19 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 		p.selected = msg.Wallpaper
 		p.renderedImg = ""
 		p.imgRows = 0
+		p.reservedRows = 0
 		if msg.Wallpaper == nil || !p.kittySupport || p.width == 0 {
 			p.loading = false
 			return p, nil
 		}
+		maxRows := p.height / 3
+		if maxRows < 1 {
+			maxRows = 1
+		}
+		p.reservedRows = maxRows
 		p.loading = true
-		innerCols := p.width - 2 // subtract border
-		return p, renderImageCmd(msg.Wallpaper.Path, innerCols)
+		innerCols := p.width - 2
+		return p, renderImageCmd(msg.Wallpaper.Path, innerCols, maxRows)
 	case imageRenderedMsg:
 		p.loading = false
 		if msg.err == nil {
@@ -69,9 +77,14 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 		p.width = int(float64(msg.Width) * previewRatio)
 		p.height = msg.Height
 		if p.selected != nil && p.kittySupport && p.renderedImg == "" && !p.loading {
+			maxRows := p.height / 3
+			if maxRows < 1 {
+				maxRows = 1
+			}
+			p.reservedRows = maxRows
 			p.loading = true
 			innerCols := p.width - 2
-			return p, renderImageCmd(p.selected.Path, innerCols)
+			return p, renderImageCmd(p.selected.Path, innerCols, maxRows)
 		}
 	}
 	return p, nil
@@ -82,16 +95,26 @@ func (p PreviewPanelModel) View() string {
 
 	switch {
 	case p.loading:
+		// Pad to reservedRows so height is stable — no jump when image arrives.
 		sb.WriteString("loading…\n")
+		if p.reservedRows > 1 {
+			sb.WriteString(strings.Repeat("\n", p.reservedRows-1))
+		}
 	case p.renderedImg != "":
 		sb.WriteString(p.renderedImg)
-		sb.WriteString(strings.Repeat("\n", p.imgRows))
+		// imgRows <= reservedRows (letterbox guarantee); pad the remainder.
+		if pad := p.reservedRows - p.imgRows; pad > 0 {
+			sb.WriteString(strings.Repeat("\n", pad))
+		}
 	case !p.kittySupport:
 		sb.WriteString("[no preview — kitty terminal required]\n")
 	case p.selected == nil:
 		sb.WriteString("[no selection]\n")
 	default:
 		sb.WriteString("[failed to load image]\n")
+		if p.reservedRows > 1 {
+			sb.WriteString(strings.Repeat("\n", p.reservedRows-1))
+		}
 	}
 
 	if p.selected != nil {
@@ -131,7 +154,7 @@ func formatFileSize(size domain.FileSize) string {
 	}
 }
 
-func renderImageCmd(path string, innerCols int) tea.Cmd {
+func renderImageCmd(path string, innerCols, maxRows int) tea.Cmd {
 	return func() tea.Msg {
 		f, err := os.Open(path)
 		if err != nil {
@@ -144,9 +167,16 @@ func renderImageCmd(path string, innerCols int) tea.Cmd {
 			return imageRenderedMsg{err: err}
 		}
 
+		// Letterbox: scale to fit within innerCols x maxRows cells, preserving aspect ratio.
 		bounds := src.Bounds()
-		targetW := innerCols * cellPixelWidth
-		targetH := int(float64(targetW) * float64(bounds.Dy()) / float64(bounds.Dx()))
+		maxPixelW := float64(innerCols * cellPixelWidth)
+		maxPixelH := float64(maxRows * cellPixelHeight)
+		scale := math.Min(maxPixelW/float64(bounds.Dx()), maxPixelH/float64(bounds.Dy()))
+		targetW := int(float64(bounds.Dx()) * scale)
+		targetH := int(float64(bounds.Dy()) * scale)
+		if targetW < 1 {
+			targetW = 1
+		}
 		if targetH < 1 {
 			targetH = 1
 		}
@@ -160,9 +190,21 @@ func renderImageCmd(path string, innerCols int) tea.Cmd {
 		}
 
 		var buf strings.Builder
+		// Clear all previous Kitty image placements before writing the new one.
+		// Without this, old image pixels persist in the terminal's graphics layer
+		// even after Bubbletea overwrites the text content.
+		buf.WriteString("\x1b_Ga=d,d=A\x1b\\")
+		// Save cursor before the APC so we can restore it after. The Kitty APC
+		// advances the terminal cursor by imgRows rows, but Bubbletea measures
+		// frame height by counting \n characters and never sees that movement.
+		// Restoring the cursor then emitting `rows` real newlines keeps both
+		// Bubbletea's line count and the terminal cursor in sync.
+		buf.WriteString("\x1b[s")
 		if err := kittyimg.Fprint(&buf, dst); err != nil {
 			return imageRenderedMsg{err: err}
 		}
+		buf.WriteString("\x1b[u")
+		buf.WriteString(strings.Repeat("\n", rows))
 
 		return imageRenderedMsg{rendered: buf.String(), imgRows: rows}
 	}
