@@ -178,3 +178,26 @@ func TestViewFooterOmitsEmptyFocusKeys(t *testing.T) {
 		t.Error("footer should always show quit")
 	}
 }
+
+func TestViewContainsPreviewPanel(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+	view := m.View()
+	// Preview panel should show "no selection" or "kitty" placeholder
+	if !strings.Contains(view, "no selection") && !strings.Contains(view, "kitty") {
+		t.Error("View() should contain preview panel content")
+	}
+}
+
+func TestPreviewPanelReceivesWallpaperSelectedMsg(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg", "b.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	w := &domain.Wallpaper{FileName: "picked.jpg", Path: "/pics/picked.jpg"}
+	updated, _ := m.Update(WallpaperSelectedMsg{Wallpaper: w})
+	m = updated.(Model)
+
+	if m.previewPanel.selected == nil || m.previewPanel.selected.FileName != "picked.jpg" {
+		t.Error("previewPanel should store the wallpaper from WallpaperSelectedMsg")
+	}
+}
