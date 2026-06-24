@@ -40,7 +40,9 @@ func NewFileExplorer(items []domain.Wallpaper, itemsPath string, b domain.Backen
 	return FileExplorerModel{items: items, itemsPath: itemsPath, backend: b, mode: mode}
 }
 
-func (f FileExplorerModel) Init() tea.Cmd { return nil }
+func (f FileExplorerModel) Init() tea.Cmd {
+	return f.selectedCmd()
+}
 
 func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {

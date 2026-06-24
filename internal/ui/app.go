@@ -37,7 +37,15 @@ func New(items []domain.Wallpaper, wallpaperDir string, b domain.Backend, mode d
 	}
 }
 
-func (m Model) Init() tea.Cmd { return nil }
+func (m Model) Init() tea.Cmd {
+	var cmds []tea.Cmd
+	for _, c := range m.components {
+		if cmd := c.Init(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+	return tea.Batch(cmds...)
+}
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Copy components slice to avoid mutating the backing array of any previous Model.
@@ -98,6 +106,7 @@ func (m Model) View() string {
 
 	// FileExplorer (40%) + PreviewPanel (60%) — horizontal split
 	feStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	// PreviewPanel is passive (non-focusable) — its border color never changes.
 	ppStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("240"))
 

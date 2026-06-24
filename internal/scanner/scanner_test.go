@@ -89,7 +89,9 @@ func TestScanDirectory_PopulatesMetadata(t *testing.T) {
 	if err := png.Encode(f, img); err != nil {
 		t.Fatal(err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	got, err := scanner.ScanDirectory(dir)
 	if err != nil {

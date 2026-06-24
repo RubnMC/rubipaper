@@ -16,7 +16,12 @@ import (
 )
 
 const (
-	cellPixelWidth  = 12
+	// cellPixelWidth is the assumed terminal cell width in pixels (typically 12px at default
+	// font sizes). Used to compute the target image pixel width from the available column count.
+	cellPixelWidth = 12
+	// cellPixelHeight is the assumed terminal cell height in pixels. Used to estimate how many
+	// rows the rendered Kitty image occupies so that Bubbletea's text layout leaves the correct
+	// vertical gap. 24px is the most common default but varies with font size and terminal config.
 	cellPixelHeight = 24
 	previewRatio    = 0.6
 )
@@ -63,6 +68,11 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		p.width = int(float64(msg.Width) * previewRatio)
 		p.height = msg.Height
+		if p.selected != nil && p.kittySupport && p.renderedImg == "" && !p.loading {
+			p.loading = true
+			innerCols := p.width - 2
+			return p, renderImageCmd(p.selected.Path, innerCols)
+		}
 	}
 	return p, nil
 }
