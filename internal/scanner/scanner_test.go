@@ -1,6 +1,9 @@
 package scanner_test
 
 import (
+	"image"
+	"image/color"
+	"image/png"
 	"os"
 	"path/filepath"
 	"slices"
@@ -67,5 +70,39 @@ func TestScanDirectory_NonExistentPath(t *testing.T) {
 	_ = got
 	if err == nil {
 		t.Fatalf("expected an error after scanning non existent path but got %v", err)
+	}
+}
+
+func TestScanDirectory_PopulatesMetadata(t *testing.T) {
+	dir, err := os.MkdirTemp("", "rubipaper-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+
+	img := image.NewRGBA(image.Rect(0, 0, 100, 200))
+	img.Set(0, 0, color.White)
+	f, err := os.Create(filepath.Join(dir, "test.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, img); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+
+	got, err := scanner.ScanDirectory(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 image, got %d", len(got))
+	}
+	w := got[0]
+	if w.Resolution.Width != 100 || w.Resolution.Height != 200 {
+		t.Errorf("Resolution = %dx%d, want 100x200", w.Resolution.Width, w.Resolution.Height)
+	}
+	if w.FileSize <= 0 {
+		t.Errorf("FileSize = %d, want > 0", w.FileSize)
 	}
 }
