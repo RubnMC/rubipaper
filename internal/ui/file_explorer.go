@@ -40,7 +40,9 @@ func NewFileExplorer(items []domain.Wallpaper, itemsPath string, b domain.Backen
 	return FileExplorerModel{items: items, itemsPath: itemsPath, backend: b, mode: mode}
 }
 
-func (f FileExplorerModel) Init() tea.Cmd { return nil }
+func (f FileExplorerModel) Init() tea.Cmd {
+	return f.selectedCmd()
+}
 
 func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -52,11 +54,17 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keyUp):
 			if f.cursor > 0 {
 				f.cursor--
+			} else {
+				f.cursor = len(f.items) - 1
 			}
+			return f, f.selectedCmd()
 		case key.Matches(msg, keyDown):
 			if f.cursor < len(f.items)-1 {
 				f.cursor++
+			} else {
+				f.cursor = 0
 			}
+			return f, f.selectedCmd()
 		case key.Matches(msg, keyEnter):
 			if len(f.items) > 0 {
 				return f, setWallpaperCmd(f.backend, f.items[f.cursor].Path, f.mode)
@@ -82,6 +90,7 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.items = msg.items
 			f.cursor = 0
 			f.status = ""
+			return f, f.selectedCmd()
 		}
 	}
 	return f, nil
@@ -120,6 +129,14 @@ func (f FileExplorerModel) IsFocused() bool { return f.focused }
 
 func (f FileExplorerModel) ShortHelp() []key.Binding {
 	return []key.Binding{keyUp, keyDown, keyEnter, keyToggleRecursive}
+}
+
+func (f FileExplorerModel) selectedCmd() tea.Cmd {
+	if len(f.items) == 0 {
+		return func() tea.Msg { return WallpaperSelectedMsg{Wallpaper: nil} }
+	}
+	w := f.items[f.cursor]
+	return func() tea.Msg { return WallpaperSelectedMsg{Wallpaper: &w} }
 }
 
 func scanWallpapersCmd(path string, recursive bool) tea.Cmd {

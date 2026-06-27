@@ -150,3 +150,39 @@ func TestFileExplorerShortHelp(t *testing.T) {
 		t.Error("bindings[3] should match 'r' (toggle recursive search)")
 	}
 }
+
+func TestFileExplorerEmitsSelectionOnCursorDown(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers("a.jpg", "b.jpg"), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	_, cmd := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if cmd == nil {
+		t.Fatal("cursor move must return a non-nil cmd")
+	}
+	msg := cmd()
+	sel, ok := msg.(WallpaperSelectedMsg)
+	if !ok {
+		t.Fatalf("cmd() returned %T, want WallpaperSelectedMsg", msg)
+	}
+	if sel.Wallpaper == nil || sel.Wallpaper.FileName != "b.jpg" {
+		t.Errorf("selected wallpaper = %v, want b.jpg", sel.Wallpaper)
+	}
+}
+
+func TestFileExplorerEmitsNilSelectionOnEmptyList(t *testing.T) {
+	f := NewFileExplorer(makeWallpapers(), "/pics", stubBackend{}, domain.ModeFill)
+	f = f.Focus().(FileExplorerModel)
+
+	_, cmd := f.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	if cmd == nil {
+		t.Fatal("cursor move on empty list must return a non-nil cmd")
+	}
+	msg := cmd()
+	sel, ok := msg.(WallpaperSelectedMsg)
+	if !ok {
+		t.Fatalf("cmd() returned %T, want WallpaperSelectedMsg", msg)
+	}
+	if sel.Wallpaper != nil {
+		t.Error("Wallpaper should be nil when list is empty")
+	}
+}

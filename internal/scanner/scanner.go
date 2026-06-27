@@ -2,6 +2,10 @@ package scanner
 
 import (
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -41,8 +45,10 @@ func ScanDirectory(path string) ([]domain.Wallpaper, error) {
 			return nil, fmt.Errorf("resolve path for %q: %w", entry.Name(), err)
 		}
 		images = append(images, domain.Wallpaper{
-			Path:     abs,
-			FileName: entry.Name(),
+			Path:       abs,
+			FileName:   entry.Name(),
+			FileSize:   domain.FileSize(entry.Size()),
+			Resolution: readImageConfig(abs),
 		})
 	}
 	return images, nil
@@ -65,4 +71,17 @@ func ScanDirectoryRecursive(path string) ([]domain.Wallpaper, error) {
 		return nil
 	})
 	return images, err
+}
+
+func readImageConfig(path string) domain.Resolution {
+	f, err := os.Open(path)
+	if err != nil {
+		return domain.Resolution{}
+	}
+	defer f.Close()
+	cfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return domain.Resolution{}
+	}
+	return domain.Resolution{Width: cfg.Width, Height: cfg.Height}
 }
