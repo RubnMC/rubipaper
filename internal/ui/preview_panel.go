@@ -193,6 +193,9 @@ func renderImageCmd(path string, innerCols, maxRows int) tea.Cmd {
 		// Restoring the cursor then emitting `rows` real newlines keeps both
 		// Bubbletea's line count and the terminal cursor in sync.
 		buf.WriteString("\x1b[s")
+		if hPad := (innerCols - targetW/cellPixelWidth) / 2; hPad > 0 {
+			fmt.Fprintf(&buf, "\x1b[%dC", hPad)
+		}
 
 		if err := kittyimg.Fprint(&buf, dst); err != nil {
 			return imageRenderedMsg{err: err}

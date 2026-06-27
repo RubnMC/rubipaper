@@ -54,11 +54,15 @@ func (f FileExplorerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keyUp):
 			if f.cursor > 0 {
 				f.cursor--
+			} else {
+				f.cursor = len(f.items) - 1
 			}
 			return f, f.selectedCmd()
 		case key.Matches(msg, keyDown):
 			if f.cursor < len(f.items)-1 {
 				f.cursor++
+			} else {
+				f.cursor = 0
 			}
 			return f, f.selectedCmd()
 		case key.Matches(msg, keyEnter):
