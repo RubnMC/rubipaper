@@ -104,6 +104,9 @@ func (m Model) View() string {
 	} else {
 		optStyle = optStyle.BorderForeground(lipgloss.Color("240"))
 	}
+	if m.termWidth > 0 {
+		optStyle = optStyle.Width(m.termWidth - 2).MaxWidth(m.termWidth)
+	}
 	optView := optStyle.Render(m.components[0].View())
 
 	// FileExplorer (40%) + PreviewPanel (60%) — horizontal split

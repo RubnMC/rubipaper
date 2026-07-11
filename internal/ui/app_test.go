@@ -189,6 +189,52 @@ func TestViewContainsPreviewPanel(t *testing.T) {
 	}
 }
 
+func TestOptionsBarSpansFullTerminalWidth(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
+	m = updated.(Model)
+
+	topLine := strings.Split(m.View(), "\n")[0]
+	// TrimRight strips any padding JoinVertical adds to match a wider sibling
+	// block, so this measures optStyle's own width, not JoinVertical's.
+	if got := lipgloss.Width(strings.TrimRight(topLine, " ")); got != 200 {
+		t.Errorf("optbar top border width = %d, want 200", got)
+	}
+}
+
+func TestOptionsBarResizesWithTerminal(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	for _, w := range []int{80, 160} {
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: 40})
+		mw := updated.(Model)
+		topLine := strings.Split(mw.View(), "\n")[0]
+		if got := lipgloss.Width(strings.TrimRight(topLine, " ")); got != w {
+			t.Errorf("width %d: optbar top border width = %d, want %d", w, got, w)
+		}
+	}
+}
+
+func TestOptionsBarClampsOnNarrowTerminal(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 10, Height: 40})
+	m = updated.(Model)
+
+	for _, line := range strings.Split(m.View(), "\n")[:3] { // top border, content, bottom border
+		// TrimRight strips padding JoinVertical adds to match the footer
+		// line (which isn't width-bounded) — without it every line here
+		// would read as footer-width regardless of optStyle's own clamp.
+		if got := lipgloss.Width(strings.TrimRight(line, " ")); got > 10 {
+			t.Errorf("optbar line width = %d, want <= 10 on a narrow terminal: %q", got, line)
+		}
+	}
+}
+
 func TestPreviewPanelReceivesWallpaperSelectedMsg(t *testing.T) {
 	kb, ap := testConfigs()
 	m := New(makeWallpapers("a.jpg", "b.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
