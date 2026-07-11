@@ -97,8 +97,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	// OptionsBar — full width
 	optStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder())
-	if m.focused == 0 && m.appearance.FocusBorderColor != "" {
-		optStyle = optStyle.BorderForeground(lipgloss.Color(m.appearance.FocusBorderColor))
+	if m.focused == 0 {
+		if m.appearance.FocusBorderColor != "" {
+			optStyle = optStyle.BorderForeground(lipgloss.Color(m.appearance.FocusBorderColor))
+		}
 	} else {
 		optStyle = optStyle.BorderForeground(lipgloss.Color("240"))
 	}
@@ -117,8 +119,10 @@ func (m Model) View() string {
 		ppStyle = ppStyle.Width(ppTotal - 2)
 	}
 
-	if m.focused == 1 && m.appearance.FocusBorderColor != "" {
-		feStyle = feStyle.BorderForeground(lipgloss.Color(m.appearance.FocusBorderColor))
+	if m.focused == 1 {
+		if m.appearance.FocusBorderColor != "" {
+			feStyle = feStyle.BorderForeground(lipgloss.Color(m.appearance.FocusBorderColor))
+		}
 	} else {
 		feStyle = feStyle.BorderForeground(lipgloss.Color("240"))
 	}
