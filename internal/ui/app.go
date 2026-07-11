@@ -96,7 +96,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	// OptionsBar — full width
-	optStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	optStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder())
 	if m.focused == 0 && m.appearance.FocusBorderColor != "" {
 		optStyle = optStyle.BorderForeground(lipgloss.Color(m.appearance.FocusBorderColor))
 	} else {
@@ -105,9 +105,9 @@ func (m Model) View() string {
 	optView := optStyle.Render(m.components[0].View())
 
 	// FileExplorer (40%) + PreviewPanel (60%) — horizontal split
-	feStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
+	feStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder())
 	// PreviewPanel is passive (non-focusable) — its border color never changes.
-	ppStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
+	ppStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240"))
 
 	if m.termWidth > 0 {

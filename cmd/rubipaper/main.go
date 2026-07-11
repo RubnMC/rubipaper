@@ -60,7 +60,7 @@ func main() {
 
 	b, err := backend.NewBackend(cfg.Base.DefaultBackend)
 	if err != nil {
-		slog.Error("failed to initialize default backend", "backend", cfg.Base.DefaultBackend)
+		slog.Error("failed to initialize default backend", "backend", cfg.Base.DefaultBackend, "err", err)
 		os.Exit(1)
 	}
 
