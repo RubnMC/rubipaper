@@ -109,6 +109,15 @@ func (m Model) View() string {
 	}
 	optView := optStyle.Render(m.components[0].View())
 
+	// Footer — computed before the middle row since its height (always a
+	// single line, per bubbles/help.ShortHelpView) is needed below to size
+	// the middle row so FileExplorer/PreviewPanel fill the remaining space.
+	keys := append([]key.Binding{}, m.globalKeys...)
+	if km, ok := m.components[m.focused].(ComponentKeyMap); ok {
+		keys = append(keys, km.ShortHelp()...)
+	}
+	footer := m.help.ShortHelpView(keys)
+
 	// FileExplorer (40%) + PreviewPanel (60%) — horizontal split
 	feStyle := lipgloss.NewStyle().Border(lipgloss.NormalBorder())
 	// PreviewPanel is passive (non-focusable) — its border color never changes.
@@ -120,6 +129,18 @@ func (m Model) View() string {
 		ppTotal := m.termWidth - feTotal
 		feStyle = feStyle.Width(feTotal - 2)
 		ppStyle = ppStyle.Width(ppTotal - 2)
+	}
+
+	if m.termHeight > 0 {
+		// Height() only pads short content up to this minimum — unlike
+		// MaxWidth on the options bar, we don't pair this with MaxHeight:
+		// FileExplorer has no scrolling yet, so clamping would silently
+		// truncate the item list and could hide the selected cursor row.
+		availableHeight := m.termHeight - lipgloss.Height(optView) - lipgloss.Height(footer)
+		if availableHeight > 2 {
+			feStyle = feStyle.Height(availableHeight - 2)
+			ppStyle = ppStyle.Height(availableHeight - 2)
+		}
 	}
 
 	if m.focused == 1 {
@@ -134,13 +155,6 @@ func (m Model) View() string {
 		feStyle.Render(m.components[1].View()),
 		ppStyle.Render(m.previewPanel.View()),
 	)
-
-	// Footer
-	keys := append([]key.Binding{}, m.globalKeys...)
-	if km, ok := m.components[m.focused].(ComponentKeyMap); ok {
-		keys = append(keys, km.ShortHelp()...)
-	}
-	footer := m.help.ShortHelpView(keys)
 
 	return lipgloss.JoinVertical(lipgloss.Left, optView, middle, footer)
 }

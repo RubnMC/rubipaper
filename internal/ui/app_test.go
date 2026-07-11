@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -231,6 +232,50 @@ func TestOptionsBarClampsOnNarrowTerminal(t *testing.T) {
 		// would read as footer-width regardless of optStyle's own clamp.
 		if got := lipgloss.Width(strings.TrimRight(line, " ")); got > 10 {
 			t.Errorf("optbar line width = %d, want <= 10 on a narrow terminal: %q", got, line)
+		}
+	}
+}
+
+func TestMiddleRowFillsRemainingTerminalHeight(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
+	m = updated.(Model)
+
+	if got := strings.Count(m.View(), "\n") + 1; got != 40 {
+		t.Errorf("total rendered height = %d, want 40 (middle row should fill remaining space)", got)
+	}
+}
+
+func TestMiddleRowResizesWithTerminalHeight(t *testing.T) {
+	kb, ap := testConfigs()
+	m := New(makeWallpapers("a.jpg"), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	for _, h := range []int{20, 40} {
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: h})
+		mh := updated.(Model)
+		if got := strings.Count(mh.View(), "\n") + 1; got != h {
+			t.Errorf("height %d: total rendered height = %d, want %d", h, got, h)
+		}
+	}
+}
+
+func TestFileExplorerOverflowNotClipped(t *testing.T) {
+	names := make([]string, 30)
+	for i := range names {
+		names[i] = fmt.Sprintf("wallpaper-%02d.jpg", i)
+	}
+	kb, ap := testConfigs()
+	m := New(makeWallpapers(names...), "/pics", stubBackend{}, domain.ModeFill, kb, ap)
+
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 15})
+	m = updated.(Model)
+
+	view := m.View()
+	for _, name := range names {
+		if !strings.Contains(view, name) {
+			t.Errorf("View() should still contain %q when the list overflows a short terminal (no MaxHeight clipping)", name)
 		}
 	}
 }
