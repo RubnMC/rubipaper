@@ -73,7 +73,14 @@ func (p PreviewPanelModel) Update(msg tea.Msg) (PreviewPanelModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		p.width = int(float64(msg.Width) * previewRatio)
 		p.height = msg.Height
-		if p.selected != nil && p.kittySupport && p.renderedImg == "" && !p.loading {
+		if p.selected != nil && p.kittySupport {
+			// Re-render on every resize, not just the first time: centering
+			// and scale are baked into renderedImg at render time (see
+			// renderImageCmd), so a stale image drifts off-center once the
+			// panel changes shape. Clear it so View() shows "loading…"
+			// instead of the stale, mis-centered frame in the meantime.
+			p.renderedImg = ""
+			p.imgRows = 0
 			maxRows := max(p.height / 3, 1)
 			p.reservedRows = maxRows
 			p.loading = true

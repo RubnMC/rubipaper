@@ -1,12 +1,33 @@
 package ui
 
 import (
+	"image"
+	"image/png"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/RubnMC/rubipaper/internal/domain"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+// makeTempImage creates a temp PNG file and returns its path, following the
+// same pattern as internal/scanner/scanner_test.go's real-decode tests.
+func makeTempImage(t *testing.T, w, h int) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.png")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, w, h))); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
 
 func TestPreviewPanelStartsWithNoSelection(t *testing.T) {
 	p := NewPreviewPanel(false)
@@ -64,6 +85,59 @@ func TestPreviewPanelHandlesWindowResize(t *testing.T) {
 	p, _ = p.Update(tea.WindowSizeMsg{Width: 200, Height: 50})
 	if p.width == 0 {
 		t.Error("PreviewPanel should update width on WindowSizeMsg")
+	}
+}
+
+func TestPreviewPanelRerendersImageOnResize(t *testing.T) {
+	imgPath := makeTempImage(t, 400, 200)
+	p := NewPreviewPanel(true)
+
+	p, _ = p.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+
+	var cmd tea.Cmd
+	p, cmd = p.Update(WallpaperSelectedMsg{Wallpaper: &domain.Wallpaper{FileName: "test.png", Path: imgPath}})
+	if cmd == nil {
+		t.Fatal("selecting a wallpaper with kitty support should return a render Cmd")
+	}
+	p, _ = p.Update(cmd())
+	firstRendered := p.renderedImg
+	if firstRendered == "" {
+		t.Fatal("expected renderedImg to be populated after the initial render")
+	}
+
+	p, cmd = p.Update(tea.WindowSizeMsg{Width: 300, Height: 30})
+	if cmd == nil {
+		t.Fatal("resizing while a wallpaper is selected should return a render Cmd")
+	}
+	if !p.loading || p.renderedImg != "" {
+		t.Error("resize should clear the stale renderedImg and show loading until the recentered image is ready")
+	}
+
+	p, _ = p.Update(cmd())
+	if p.renderedImg == "" {
+		t.Fatal("expected renderedImg to be populated after the resize re-render")
+	}
+	if p.renderedImg == firstRendered {
+		t.Error("renderedImg should differ after resize — image should be recentered/rescaled for the new width")
+	}
+}
+
+func TestPreviewPanelResizeSkipsRenderWithoutKittySupport(t *testing.T) {
+	p := NewPreviewPanel(false)
+	p, _ = p.Update(WallpaperSelectedMsg{Wallpaper: &domain.Wallpaper{FileName: "x.jpg", Path: "/x.jpg"}})
+
+	_, cmd := p.Update(tea.WindowSizeMsg{Width: 200, Height: 50})
+	if cmd != nil {
+		t.Error("resize should not trigger a render Cmd without kitty support")
+	}
+}
+
+func TestPreviewPanelResizeSkipsRenderWithoutSelection(t *testing.T) {
+	p := NewPreviewPanel(true)
+
+	_, cmd := p.Update(tea.WindowSizeMsg{Width: 200, Height: 50})
+	if cmd != nil {
+		t.Error("resize should not trigger a render Cmd with no wallpaper selected")
 	}
 }
 
